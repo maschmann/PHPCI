@@ -52,34 +52,113 @@ class PhpMetrics implements PHPCI\Plugin, PHPCI\ZeroConfigPlugin
     {
         $this->phpci = $phpci;
         $this->build = $build;
-        $this->options = $options;
+        $this->options = $this->resolveOptions($options);
+        $this->metricsConfig = array(
+            '--report-json' => 'php://stdout',
+            '--quiet' => null, // important, keeps output restricted to json
+            '--no-interaction' => null, //failsafe
+            '--extensions' => 'php',
+        );
     }
 
     /**
-     *
+     * @inheritdoc
      */
     public function execute()
     {
-        // TODO: Implement execute() method.
+        list($ignore, $standard, $suffixes) = $this->options;
+
+        $phpcs = $this->phpci->findBinary('phpmetrics');
+
+        if (!$phpcs) {
+            $this->phpci->logFailure('Could not find phpcs.');
+            return false;
+        }
+
+        $this->phpci->logExecOutput(false);
+
+        $cmd = $phpcs . ' --report=json %s %s %s %s %s "%s"';
+        $this->phpci->executeCommand(
+            $cmd
+        );
+
+        $output = $this->phpci->getLastOutput();
+        list($errors, $warnings, $data) = $this->processMetrics($output);
+
+        $this->phpci->logExecOutput(true);
+        $this->build->storeMeta('phpmetrics-data', $data);
+
+        return true;
     }
 
     /**
-     * @param string $stage
-     * @param Builder $builder
-     * @param Build $build
+     * @inheritdoc
      */
     public static function canExecute($stage, Builder $builder, Build $build)
     {
         // TODO: Implement canExecute() method.
     }
 
-    protected function processMetrics()
+    /**
+     * @param mixed $output
+     * @return array
+     */
+    protected function processMetrics($output)
     {
+        $errors = array();
+        $warnings = array();
+        $data = array();
 
+
+        return array(
+            $errors,
+            $warnings,
+            $data
+        );
     }
 
-    protected function resolveOptions()
+    /**
+     * resolve the final configuration from user config and given defaults
+     *
+     * @param array $options
+     * @return array
+     */
+    protected function resolveOptions($options)
     {
+        $resolvedOptions = array();
+        foreach ($options as $param => $value) {
+            // level values
+            if (empty($value)) {
+                $value = null;
+            }
 
+            $resolvedOptions['--' . $param] = $value;
+        }
+
+        $config = array_replace_recursive(
+            $this->metricsConfig,
+            $resolvedOptions
+        );
+
+        return $config;
+    }
+
+    /**
+     * create string representation of options for commandline call
+     *
+     * @return string
+     */
+    protected function resolveOptionsString()
+    {
+        $options = '';
+        foreach ($this->options as $param => $value) {
+            if (empty($param)) {
+                $options .= $param . ' ';
+            } else {
+                $options .= $param . '="' . $value . '" ';
+            }
+        }
+
+        return $options;
     }
 }
