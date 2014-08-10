@@ -42,6 +42,11 @@ class PhpMetrics implements PHPCI\Plugin, PHPCI\ZeroConfigPlugin
     protected $metricsConfig;
 
     /**
+     * @var array
+     */
+    protected $configWhitelist;
+
+    /**
      * Constructor.
      *
      * @param Builder $phpci
@@ -54,10 +59,16 @@ class PhpMetrics implements PHPCI\Plugin, PHPCI\ZeroConfigPlugin
         $this->build = $build;
         $this->options = $this->resolveOptions($options);
         $this->metricsConfig = array(
-            '--report-json' => 'php://stdout',
-            '--quiet' => null, // important, keeps output restricted to json
+            '--report-json'    => 'php://stdout',
+            '--quiet'          => null, // important, keeps output restricted to json
             '--no-interaction' => null, //failsafe
-            '--extensions' => 'php',
+            '--extensions'     => 'php',
+        );
+
+        $this->configWhitelist = array(
+            'exclude-dirs'      => '--excludeDirs',
+            'failure-condition' => '--failure-condition',
+            'path'              => '',
         );
     }
 
