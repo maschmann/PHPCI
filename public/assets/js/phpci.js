@@ -12,6 +12,8 @@ var PHPCI = {
             if (typeof PHPCI_PROJECT_ID != 'undefined') {
                 PHPCI.intervals.getProjectBuilds = setInterval(PHPCI.getProjectBuilds, 10000);
             }
+
+            PHPCI.addDeleteConfirmation();
         });
 
         $(window).on('builds-updated', function (e, data) {
@@ -69,6 +71,16 @@ var PHPCI = {
             });
         }
 
+    },
+
+    addDeleteConfirmation: function() {
+        $('.phpci-app-confirm-delete').on('click', function (e) {
+            e.preventDefault();
+
+            confirmDelete(e.target.href, $(this).data('type'), true);
+
+            return false;
+        });
     }
 };
 
@@ -414,7 +426,7 @@ function dateFormat(date)
     if (typeof date == 'string') {
         date = new Date(date);
     }
-    
+
     var rtn = '';
 
     switch (date.getMonth()) {
